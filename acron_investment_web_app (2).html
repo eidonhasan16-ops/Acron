@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acron - Smart Investment & Auth Control Platform</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        dark: {
+                            bg: '#070B14',
+                            card: '#0F172A',
+                            border: '#1E293B',
+                            hover: '#1E293B/60'
+                        },
+                        brand: {
+                            cyan: '#06B6D4',
+                            emerald: '#10B981',
+                            amber: '#F59E0B',
+                            rose: '#F43F5E',
+                            purple: '#8B5CF6'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #070B14;
+            color: #F3F4F6;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-modal {
+            background: rgba(11, 15, 25, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .glow-cyan {
+            box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.3);
+        }
+        .glow-emerald {
+            box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.3);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #070B14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1E293B;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #06B6D4;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-[#070B14] text-gray-100 flex flex-col justify-between antialiased selection:bg-cyan-500 selection:text-slate-950">
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3"></div>
+
+    <!-- TOP NAVIGATION BAR (Visible when Logged In) -->
+    <header id="main-header" class="hidden sticky top-0 z-40 border-b border-gray-800/80 bg-[#070B14]/80 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            
+            <!-- Logo & Brand -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-emerald-400 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-cyan-500/20">
+                    A
+                </div>
+                <div>
+                    <span class="text-xl font-black bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent tracking-tight">ACRON</span>
+                    <span class="text-[10px] block font-bold text-gray-400 tracking-wider">INVESTMENT</span>
+                </div>
+            </div>
+
+            <!-- Balance Indicator & Navigation Links -->
+            <div class="flex items-center gap-2 sm:gap-4">
+                
+                <!-- Balance Badge -->
+                <div class="flex items-center gap-2 bg-gray-900/90 border border-cyan-500/30 rounded-xl px-3 py-1.5 shadow-inner">
+                    <div class="text-[10px] font-bold text-gray-400 uppercase hidden sm:block">Balance</div>
+                    <div class="font-mono font-extrabold text-cyan-400 text-sm sm:text-base">৳<span id="nav-user-balance">0.00</span></div>
+                    <button onclick="openDepositModal()" class="ml-1 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-2 py-0.5 rounded-lg text-xs transition">
+                        + Deposit
+                    </button>
+                </div>
+
+                <!-- Admin Switcher -->
+                <button onclick="window.open('admin.html', '_blank')" class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 text-xs font-bold transition">
+                    <i class="fa-solid fa-user-shield"></i> Switch to Admin
+                </button>
+
+                <!-- Navigation Tabs -->
+                <div class="flex items-center gap-1 bg-gray-900 p-1 rounded-xl border border-gray-800">
+                    <button onclick="switchTab('dashboard')" id="tab-dashboard" class="px-3 py-1.5 rounded-lg text-xs font-bold text-cyan-400 bg-cyan-500/10 transition">Dashboard</button>
+                    <button onclick="switchTab('packages')" id="tab-packages" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition">Packages</button>
+                    <button onclick="switchTab('wallet')" id="tab-wallet" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition">Wallet</button>
+                    <button onclick="switchTab('referral')" id="tab-referral" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition">Referral</button>
+                </div>
+
+                <!-- Logout Button -->
+                <button onclick="logoutUser()" title="Logout Account" class="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 text-xs font-bold transition flex items-center justify-center">
+                    <i class="fa-solid fa-right-from-bracket text-base"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN APP WRAPPER -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full">
+
+        <!-- VIEW 1: AUTHENTICATION SCREEN (Registration & Login) -->
+        <section id="view-auth" class="flex items-center justify-center min-h-[80vh]">
+            <div class="w-full max-w-md glass-modal rounded-3xl p-6 sm:p-8 space-y-6 border border-gray-800 shadow-2xl relative overflow-hidden">
+                
+                <div class="text-center space-y-2">
+                    <div class="inline-flex w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-500 to-emerald-400 items-center justify-center text-slate-950 font-black text-3xl shadow-lg shadow-cyan-500/30 mb-2">
+                        A
+                    </div>
+                    <h2 id="auth-title" class="text-2xl font-black text-white tracking-tight">Create Acron Account</h2>
+                    <p id="auth-subtitle" class="text-xs text-gray-400">Join Bangladesh's premier smart wealth growth platform.</p>
+                </div>
+
+                <!-- Toggle Buttons (Login vs Register) -->
+                <div class="grid grid-cols-2 p-1 bg-gray-900 rounded-2xl border border-gray-800">
+                    <button onclick="switchAuthMode('register')" id="auth-btn-register" class="py-2.5 text-xs font-extrabold rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 transition shadow-md">
+                        Register ID
+                    </button>
+                    <button onclick="switchAuthMode('login')" id="auth-btn-login" class="py-2.5 text-xs font-extrabold rounded-xl text-gray-400 hover:text-white transition">
+                        Log In
+                    </button>
+                </div>
+
+                <!-- REGISTRATION FORM -->
+                <form id="form-register" onsubmit="handleRegistration(event)" class="space-y-4 text-xs">
+                    <div>
+                        <label class="block text-gray-300 font-semibold mb-1">Full Name</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-user absolute left-3.5 top-3 text-gray-500"></i>
+                            <input id="reg-name" type="text" required placeholder="e.g. Tanvir Hasan" class="w-full bg-gray-900/90 border border-gray-700/80 rounded-xl pl-10 pr-3 py-2.5 text-white focus:outline-none focus:border-cyan-400 font-medium">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-300 font-semibold mb-1">Mobile Number / Email</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-phone absolute left-3.5 top-3 text-gray-500"></i>
+                            <input id="reg-phone" type="text" required placeholder="017XXXXXXXX" class="w-full bg-gray-900/90 border border-gray-700/80 rounded-xl pl-10 pr-3 py-2.5 text-white font-mono focus:outline-none focus:border-cyan-400 font-medium">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-300 font-semibold mb-1">Password</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-lock absolute left-3.5 top-3 text-gray-500"></i>
+                            <input id="reg-pass" type="password" required placeholder="••••••••" class="w-full bg-gray-900/90 border border-gray-700/80 rounded-xl pl-10 pr-3 py-2.5 text-white focus:outline-none focus:border-cyan-400 font-medium">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-300 font-semibold mb-1">Confirm Password</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-shield-halved absolute left-3.5 top-3 text-gray-500"></i>
+                            <input id="reg-confirm-pass" type="password" required placeholder="••••••••" class="w-full bg-gray-900/90 border border-gray-700/80 rounded-xl pl-10 pr-3 py-2.5 text-white focus:outline-none focus:border-cyan-400 font-medium">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-300 font-semibold mb-1">Referral Code <span class="text-gray-500 font-normal">(Optional)</span></label>
+                        <div class="relative">
+                            <i class="fa-solid fa-gift absolute left-3.5 top-3 text-gray-500"></i>
+                            <input id="reg-ref" type="text" placeholder="e.g. ACRON99" class="w-full bg-gray-900/90 border border-gray-700/80 rounded-xl pl-10 pr-3 py-2.5 text-white font-mono uppercase focus:outline-none focus:border-cyan-400 font-medium">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-400 text-slate-950 font-black text-sm shadow-lg shadow-cyan-500/25 hover:opacity-90 transition transform active:scale-95">
+                        Register Account Now
+                    </button>
+                </form>
+
+                <!-- LOGIN FORM -->
+                <form id="form-login" onsubmit="handleLogin(event)" class="hidden space-y-4 text-xs">
+                    <div>
+                        <label class="block text-gray-300 font-semibold mb-1">Mobile Number / Email</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-mobile-screen-button absolute left-3.5 top-3 text-gray-500"></i>
+                            <input id="login-phone" type="text" required placeholder="017XXXXXXXX" class="w-full bg-gray-900/90 border border-gray-700/80 rounded-xl pl-10 pr-3 py-2.5 text-white font-mono focus:outline-none focus:border-cyan-400">
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="text-gray-300 font-semibold">Password</label>
+                            <a href="#" onclick="showToast('Contact Telegram support for password reset', 'info'); return false;" class="text-[11px] text-cyan-400 hover:underline">Forgot?</a>
+                        </div>
+                        <div class="relative">
+                            <i class="fa-solid fa-lock absolute left-3.5 top-3 text-gray-500"></i>
+                            <input id="login-pass" type="password" required placeholder="••••••••" class="w-full bg-gray-900/90 border border-gray-700/80 rounded-xl pl-10 pr-3 py-2.5 text-white focus:outline-none focus:border-cyan-400">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 font-black text-sm shadow-lg shadow-cyan-500/25 hover:opacity-90 transition transform active:scale-95">
+                        Log In to Account
+                    </button>
+
+                    <div class="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-[11px] text-cyan-300 space-y-1">
+                        <div class="font-bold flex items-center gap-1"><i class="fa-solid fa-circle-info"></i> Quick Demo Login:</div>
+                        <div>Phone: <span class="font-mono text-white">01711223344</span> | Pass: <span class="font-mono text-white">123456</span></div>
+                    </div>
+                </form>
+
+            </div>
+        </section>
+
+        <!-- VIEW 2: LOGGED-IN DASHBOARD VIEW -->
+        <div id="view-app" class="hidden space-y-6">
+
+            <!-- TAB 1: DASHBOARD -->
+            <section id="sec-dashboard" class="space-y-6">
+                
+                <!-- Announcement Banner -->
+                <div class="glass-panel p-4 rounded-2xl flex items-center gap-3 border-l-4 border-l-cyan-500 text-xs">
+                    <i class="fa-solid fa-bullhorn text-cyan-400 text-lg animate-pulse"></i>
+                    <div class="text-gray-300" id="announcement-text">Welcome to Acron Official! Daily returns credited automatically every 24 hours.</div>
+                </div>
+
+                <!-- User Welcome Card -->
+                <div class="glass-panel p-6 rounded-3xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-gray-800">
+                    <div class="space-y-2 z-10">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Platform Active
+                        </div>
+                        <h1 class="text-2xl sm:text-3xl font-black text-white">Welcome back, <span id="user-display-name" class="bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">Investor</span></h1>
+                        <p class="text-xs text-gray-400 max-w-md">Start growing your daily revenue with Acron Automated Wealth Packages.</p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-3 z-10">
+                        <button onclick="openDepositModal()" class="px-5 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-emerald-400 text-slate-950 font-extrabold text-xs shadow-lg shadow-cyan-500/20 hover:opacity-90 transition flex items-center gap-2">
+                            <i class="fa-solid fa-wallet"></i> Deposit Money
+                        </button>
+                        <button onclick="claimDailyCheckin()" id="btn-checkin" class="px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-400 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/20 hover:opacity-90 transition flex items-center gap-2">
+                            <i class="fa-solid fa-calendar-check"></i> Daily Check-in (৳20)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="glass-panel p-5 rounded-2xl space-y-2 border-l-4 border-l-emerald-500">
+                        <div class="flex items-center justify-between text-gray-400 text-xs font-semibold">
+                            <span>Account Balance</span>
+                            <i class="fa-solid fa-wallet text-emerald-400"></i>
+                        </div>
+                        <div class="text-2xl sm:text-3xl font-extrabold text-emerald-400">৳<span id="card-balance">0.00</span></div>
+                        <div class="text-[11px] text-gray-400">Ready for withdraw/invest</div>
+                    </div>
+
+                    <div class="glass-panel p-5 rounded-2xl space-y-2 border-l-4 border-l-cyan-500">
+                        <div class="flex items-center justify-between text-gray-400 text-xs font-semibold">
+                            <span>Total Investment</span>
+                            <i class="fa-solid fa-chart-line text-cyan-400"></i>
+                        </div>
+                        <div class="text-2xl sm:text-3xl font-extrabold text-cyan-400">৳<span id="card-investment">0.00</span></div>
+                        <div class="text-[11px] text-gray-400"><span id="card-active-pkg-count">0</span> Active Packages</div>
+                    </div>
+
+                    <div class="glass-panel p-5 rounded-2xl space-y-2 border-l-4 border-l-purple-500">
+                        <div class="flex items-center justify-between text-gray-400 text-xs font-semibold">
+                            <span>Total Earnings</span>
+                            <i class="fa-solid fa-coins text-purple-400"></i>
+                        </div>
+                        <div class="text-2xl sm:text-3xl font-extrabold text-purple-400">৳<span id="card-earnings">0.00</span></div>
+                        <div class="text-[11px] text-gray-400">Daily Returns + Rewards</div>
+                    </div>
+
+                    <div class="glass-panel p-5 rounded-2xl space-y-2 border-l-4 border-l-amber-500">
+                        <div class="flex items-center justify-between text-gray-400 text-xs font-semibold">
+                            <span>Referral Earn</span>
+                            <i class="fa-solid fa-user-plus text-amber-400"></i>
+                        </div>
+                        <div class="text-2xl sm:text-3xl font-extrabold text-amber-400">৳<span id="card-ref-earn">0.00</span></div>
+                        <div class="text-[11px] text-gray-400"><span id="card-ref-count">0</span> Friends Invited</div>
+                    </div>
+                </div>
+
+                <!-- Active Running Packages & Recent Activity -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 glass-panel p-5 rounded-2xl space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-layer-group text-cyan-400"></i> My Running Packages
+                            </h3>
+                            <button onclick="switchTab('packages')" class="text-xs text-cyan-400 hover:underline">Explore All -></button>
+                        </div>
+                        <div id="user-running-packages-container" class="space-y-3">
+                            <!-- Dynamic Content -->
+                        </div>
+                    </div>
+
+                    <!-- Platform Recent Activity Log -->
+                    <div class="glass-panel p-5 rounded-2xl space-y-4">
+                        <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-clock-rotate-left text-amber-400"></i> Platform History
+                        </h3>
+                        <div id="user-recent-tx-container" class="space-y-2.5 text-xs">
+                            <!-- Dynamic History -->
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- TAB 2: PACKAGES -->
+            <section id="sec-packages" class="hidden space-y-6">
+                <div>
+                    <h2 class="text-2xl font-extrabold text-white">Investment Tiers (Acron 01–09)</h2>
+                    <p class="text-xs text-gray-400 mt-1">Select an automated package tier to start earning daily returns.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="packages-grid-container">
+                    <!-- Dynamic Package Cards 01 - 09 -->
+                </div>
+            </section>
+
+            <!-- TAB 3: WALLET & TRANSACTIONS -->
+            <section id="sec-wallet" class="hidden space-y-6 max-w-4xl mx-auto">
+                <div class="glass-panel p-6 rounded-3xl space-y-6">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-800 pb-4">
+                        <div>
+                            <h2 class="text-2xl font-black text-white">Wallet & Payouts</h2>
+                            <p class="text-xs text-gray-400 mt-0.5">Withdraw funds directly to your bKash or Nagad wallet.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button onclick="openDepositModal()" class="px-4 py-2 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-bold hover:bg-cyan-500/20 transition">
+                                Deposit Money
+                            </button>
+                            <button onclick="openWithdrawModal()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-400 text-slate-950 text-xs font-extrabold shadow-lg shadow-amber-500/20 hover:opacity-90 transition">
+                                Withdraw Funds
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- User Transactions History -->
+                    <div class="space-y-3">
+                        <h3 class="font-bold text-white text-sm">Recent Account Transactions</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs text-gray-400">
+                                <thead class="bg-gray-900/80 uppercase text-gray-400 font-semibold border-b border-gray-800">
+                                    <tr>
+                                        <th class="p-3">Type</th>
+                                        <th class="p-3">Amount</th>
+                                        <th class="p-3">Details / TrxID</th>
+                                        <th class="p-3">Time</th>
+                                        <th class="p-3">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="wallet-tx-tbody" class="divide-y divide-gray-800">
+                                    <!-- Dynamic Rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: REFERRAL HUB -->
+            <section id="sec-referral" class="hidden space-y-6 max-w-3xl mx-auto">
+                <div class="glass-panel p-6 rounded-3xl space-y-6">
+                    <div class="text-center space-y-2">
+                        <div class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center text-2xl mx-auto">
+                            <i class="fa-solid fa-user-group"></i>
+                        </div>
+                        <h2 class="text-2xl font-black text-white">Referral Reward Program</h2>
+                        <p class="text-xs text-gray-400">Invite friends and earn up to 10% instant commission on their package activations.</p>
+                    </div>
+
+                    <div class="p-4 rounded-2xl bg-gray-900/80 border border-gray-800 space-y-3">
+                        <label class="block text-xs font-bold text-gray-300">Your Unique Referral Link</label>
+                        <div class="flex items-center gap-2">
+                            <input id="ref-link-input" type="text" readonly value="https://acron.app/ref?code=ACRON99" class="w-full bg-black/60 border border-gray-700 rounded-xl px-3 py-2.5 text-xs text-cyan-300 font-mono">
+                            <button onclick="copyRefLink()" class="px-4 py-2.5 rounded-xl bg-cyan-500 text-slate-950 font-bold text-xs hover:bg-cyan-400 transition flex items-center gap-1.5 flex-shrink-0">
+                                <i class="fa-solid fa-copy"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+    </main>
+
+    <!-- MODAL 1: DEPOSIT FUNDS -->
+    <div id="modal-deposit" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-modal max-w-md w-full rounded-3xl p-6 relative space-y-5 border border-cyan-500/30 shadow-2xl">
+            <button onclick="closeModal('modal-deposit')" class="absolute top-5 right-5 text-gray-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="space-y-1">
+                <h3 class="font-extrabold text-lg text-white flex items-center gap-2">
+                    <i class="fa-solid fa-wallet text-cyan-400"></i> Deposit Funds
+                </h3>
+                <p class="text-xs text-gray-400">Send money to official Acron account</p>
+            </div>
+
+            <!-- Payment Method Selector -->
+            <div class="space-y-2">
+                <label class="block text-xs font-bold text-gray-300">1. Select Payment Method</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <button id="dep-btn-bkash" onclick="selectDepositMethod('bKash')" class="p-3 rounded-2xl bg-pink-500/20 border-2 border-pink-500 text-pink-300 font-extrabold text-xs flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-mobile-screen"></i> bKash
+                    </button>
+                    <button id="dep-btn-nagad" onclick="selectDepositMethod('Nagad')" class="p-3 rounded-2xl bg-gray-900 border border-gray-700 text-gray-400 font-extrabold text-xs flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-mobile-screen"></i> Nagad
+                    </button>
+                </div>
+            </div>
+
+            <!-- Gateway Details Display Box -->
+            <div class="p-4 rounded-2xl bg-gray-900/90 border border-gray-800 space-y-2 text-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400 font-medium">Official Account Number:</span>
+                    <span id="dep-gw-type" class="text-[10px] px-2 py-0.5 rounded bg-pink-500/20 text-pink-300 font-bold">bKash</span>
+                </div>
+                <div class="flex items-center justify-between gap-2">
+                    <span id="dep-gw-num" class="font-mono text-base font-black text-cyan-400">01712345678</span>
+                    <button onclick="copyGatewayNumber()" class="px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 text-[11px] font-bold hover:bg-cyan-500/30 transition">
+                        <i class="fa-solid fa-copy"></i> Copy
+                    </button>
+                </div>
+                <p id="dep-gw-note" class="text-[10px] text-amber-400/90 pt-1 border-t border-gray-800">
+                    <i class="fa-solid fa-circle-info"></i> Send money to the above number, then fill out the form below.
+                </p>
+            </div>
+
+            <form onsubmit="handleDepositSubmit(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-gray-300 font-semibold mb-1">2. Deposit Amount (BDT)</label>
+                    <input id="dep-amount" type="number" min="300" required placeholder="Minimum ৳300" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-white font-mono focus:outline-none focus:border-cyan-400">
+                </div>
+
+                <div>
+                    <label class="block text-gray-300 font-semibold mb-1">3. Your Sender Mobile Number</label>
+                    <input id="dep-sender" type="text" required placeholder="e.g. 017XXXXXXXX" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-white font-mono focus:outline-none focus:border-cyan-400">
+                </div>
+
+                <div>
+                    <label class="block text-gray-300 font-semibold mb-1">4. Transaction ID (TrxID)</label>
+                    <input id="dep-trxid" type="text" required placeholder="e.g. 9J8A23KLX" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-white font-mono uppercase focus:outline-none focus:border-cyan-400">
+                </div>
+
+                <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 hover:opacity-90 transition">
+                    Submit Deposit Request
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: WITHDRAW FUNDS -->
+    <div id="modal-withdraw" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-modal max-w-md w-full rounded-3xl p-6 relative space-y-5 border border-amber-500/30 shadow-2xl">
+            <button onclick="closeModal('modal-withdraw')" class="absolute top-5 right-5 text-gray-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="space-y-1">
+                <h3 class="font-extrabold text-lg text-white flex items-center gap-2">
+                    <i class="fa-solid fa-money-bill-transfer text-amber-400"></i> Withdraw Payout
+                </h3>
+                <p class="text-xs text-gray-400">Operating Window: 9:00 AM – 5:00 PM Daily</p>
+            </div>
+
+            <form onsubmit="handleWithdrawSubmit(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-gray-300 font-semibold mb-1">Select Payout Gateway</label>
+                    <select id="wd-gateway" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-white">
+                        <option value="bKash">bKash Personal</option>
+                        <option value="Nagad">Nagad Personal</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-gray-300 font-semibold mb-1">Withdraw Amount (BDT)</label>
+                    <input id="wd-amount" type="number" min="500" required placeholder="Minimum ৳500" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-white font-mono focus:outline-none focus:border-amber-400">
+                </div>
+
+                <div>
+                    <label class="block text-gray-300 font-semibold mb-1">Your Receiving Mobile Number</label>
+                    <input id="wd-account" type="text" required placeholder="e.g. 017XXXXXXXX" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-white font-mono focus:outline-none focus:border-amber-400">
+                </div>
+
+                <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/20 hover:opacity-90 transition">
+                    Request Payout
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // --- CENTRAL APPLICATION STATE ---
+        let appState = {
+            currentUser: null, // Populated upon Login or Registration
+            activeMethod: "bKash",
+            registeredUsers: [
+                { id: "U101", name: "Rahul Hasan", phone: "01711223344", pass: "123456", balance: 1500.00, investment: 300.00, earnings: 60.00, refEarn: 0.00, refCount: 0, activePackages: ["Acron 01"], checkedIn: false }
+            ],
+            txHistory: [
+                { id: "TX-101", type: "Deposit", amount: 1000, details: "bKash TrxID BK992831X", time: "2026-10-05 09:30 AM", status: "Approved" }
+            ],
+            packages: [
+                { id: "01", name: "Acron 01", price: 300, daily: 30, validity: "60 Days" },
+                { id: "02", name: "Acron 02", price: 600, daily: 65, validity: "60 Days" },
+                { id: "03", name: "Acron 03", price: 1200, daily: 135, validity: "60 Days" },
+                { id: "04", name: "Acron 04", price: 2500, daily: 290, validity: "60 Days" },
+                { id: "05", name: "Acron 05", price: 5000, daily: 600, validity: "60 Days" },
+                { id: "06", name: "Acron 06", price: 10000, daily: 1250, validity: "60 Days" },
+                { id: "07", name: "Acron 07", price: 20000, daily: 2600, validity: "60 Days" },
+                { id: "08", name: "Acron 08", price: 35000, daily: 4700, validity: "60 Days" },
+                { id: "09", name: "Acron 09", price: 50000, daily: 7000, validity: "60 Days" }
+            ]
+        };
+
+        // --- INITIALIZATION ---
+        window.onload = function() {
+            syncAdminGatewaySettings();
+            loadStoredSession();
+        };
+
+        function loadStoredSession() {
+            const savedUser = localStorage.getItem('acron_user_session');
+            if (savedUser) {
+                try {
+                    appState.currentUser = JSON.parse(savedUser);
+                    showLoggedInApp();
+                } catch (e) {
+                    console.error("Session parse error", e);
+                    showAuthScreen();
+                }
+            } else {
+                showAuthScreen();
+            }
+        }
+
+        function saveSession() {
+            if (appState.currentUser) {
+                localStorage.setItem('acron_user_session', JSON.stringify(appState.currentUser));
+            }
+        }
+
+        function syncAdminGatewaySettings() {
+            const storedAdmin = localStorage.getItem('acron_admin_state');
+            if (storedAdmin) {
+                try {
+                    const parsed = JSON.parse(storedAdmin);
+                    if (parsed.gateways) {
+                        window.adminGateways = parsed.gateways;
+                    }
+                } catch (e) {}
+            }
+            if (!window.adminGateways) {
+                window.adminGateways = {
+                    bkashNum: "01712345678",
+                    bkashType: "Personal (Send Money)",
+                    nagadNum: "01898765432",
+                    nagadType: "Agent/Merchant (Cash Out)",
+                    note: "Send money to the official number, then enter your TrxID below."
+                };
+            }
+        }
+
+        // --- AUTHENTICATION LOGIC ---
+        function switchAuthMode(mode) {
+            const formReg = document.getElementById('form-register');
+            const formLogin = document.getElementById('form-login');
+            const btnReg = document.getElementById('auth-btn-register');
+            const btnLogin = document.getElementById('auth-btn-login');
+            const title = document.getElementById('auth-title');
+            const subtitle = document.getElementById('auth-subtitle');
+
+            if (mode === 'register') {
+                formReg.classList.remove('hidden');
+                formLogin.classList.add('hidden');
+                btnReg.className = "py-2.5 text-xs font-extrabold rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 transition shadow-md";
+                btnLogin.className = "py-2.5 text-xs font-extrabold rounded-xl text-gray-400 hover:text-white transition";
+                title.innerText = "Create Acron Account";
+                subtitle.innerText = "Join Bangladesh's premier smart wealth growth platform.";
+            } else {
+                formReg.classList.add('hidden');
+                formLogin.classList.remove('hidden');
+                btnLogin.className = "py-2.5 text-xs font-extrabold rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 transition shadow-md";
+                btnReg.className = "py-2.5 text-xs font-extrabold rounded-xl text-gray-400 hover:text-white transition";
+                title.innerText = "Welcome Back to Acron";
+                subtitle.innerText = "Log in to manage your investment packages & wallet.";
+            }
+        }
+
+        function handleRegistration(e) {
+            e.preventDefault();
+            const name = document.getElementById('reg-name').value.trim();
+            const phone = document.getElementById('reg-phone').value.trim();
+            const pass = document.getElementById('reg-pass').value;
+            const confirmPass = document.getElementById('reg-confirm-pass').value;
+
+            if (pass !== confirmPass) {
+                showToast("Passwords do not match!", "error");
+                return;
+            }
+
+            const newUser = {
+                id: "U" + Math.floor(100 + Math.random() * 900),
+                name: name,
+                phone: phone,
+                pass: pass,
+                balance: 0.00,
+                investment: 0.00,
+                earnings: 0.00,
+                refEarn: 0.00,
+                refCount: 0,
+                activePackages: [],
+                checkedIn: false
+            };
+
+            appState.currentUser = newUser;
+            appState.registeredUsers.push(newUser);
+            saveSession();
+
+            showToast("Account created successfully!", "success");
+            showLoggedInApp();
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const phone = document.getElementById('login-phone').value.trim();
+            const pass = document.getElementById('login-pass').value;
+
+            const userMatch = appState.registeredUsers.find(u => u.phone === phone && u.pass === pass);
+
+            if (userMatch) {
+                appState.currentUser = userMatch;
+            } else {
+                // Allow fallback demo login for quick testing
+                appState.currentUser = {
+                    id: "U101",
+                    name: "Investor",
+                    phone: phone,
+                    balance: 1500.00,
+                    investment: 300.00,
+                    earnings: 60.00,
+                    refEarn: 0.00,
+                    refCount: 0,
+                    activePackages: ["Acron 01"],
+                    checkedIn: false
+                };
+            }
+
+            saveSession();
+            showToast(`Welcome back, ${appState.currentUser.name}!`, "success");
+            showLoggedInApp();
+        }
+
+        function logoutUser() {
+            appState.currentUser = null;
+            localStorage.removeItem('acron_user_session');
+            showAuthScreen();
+            showToast("Logged out successfully.", "info");
+        }
+
+        function showAuthScreen() {
+            document.getElementById('view-auth').classList.remove('hidden');
+            document.getElementById('view-app').classList.add('hidden');
+            document.getElementById('main-header').classList.add('hidden');
+        }
+
+        function showLoggedInApp() {
+            document.getElementById('view-auth').classList.add('hidden');
+            document.getElementById('view-app').classList.remove('hidden');
+            document.getElementById('main-header').classList.remove('hidden');
+
+            renderUserData();
+            renderPackagesGrid();
+            renderWalletTable();
+            switchTab('dashboard');
+        }
+
+        // --- UI DATA RENDERING ---
+        function renderUserData() {
+            const u = appState.currentUser;
+            if (!u) return;
+
+            document.getElementById('user-display-name').innerText = u.name;
+            document.getElementById('nav-user-balance').innerText = u.balance.toFixed(2);
+            document.getElementById('card-balance').innerText = u.balance.toFixed(2);
+            document.getElementById('card-investment').innerText = u.investment.toFixed(2);
+            document.getElementById('card-earnings').innerText = u.earnings.toFixed(2);
+            document.getElementById('card-ref-earn').innerText = u.refEarn.toFixed(2);
+            document.getElementById('card-ref-count').innerText = u.refCount;
+            document.getElementById('card-active-pkg-count').innerText = u.activePackages.length;
+
+            const pkgContainer = document.getElementById('user-running-packages-container');
+            if (u.activePackages.length === 0) {
+                pkgContainer.innerHTML = `<div class="text-xs text-gray-500 py-6 text-center">No active investment packages yet. Start earning today!</div>`;
+            } else {
+                pkgContainer.innerHTML = u.activePackages.map(pkgName => `
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-gray-900/80 border border-cyan-500/20 text-xs">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-bolt"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-white">${pkgName}</div>
+                                <div class="text-[10px] text-emerald-400">Status: Running (Yield active)</div>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 font-bold text-[10px]">Earning Daily</span>
+                    </div>
+                `).join('');
+            }
+
+            const txLog = document.getElementById('user-recent-tx-container');
+            txLog.innerHTML = appState.txHistory.slice(0, 4).map(tx => `
+                <div class="flex items-center justify-between p-2.5 rounded-xl bg-gray-900/60 border border-gray-800">
+                    <div>
+                        <span class="font-bold text-white">${tx.type}</span>
+                        <span class="text-[10px] text-gray-500 block">${tx.time}</span>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-mono font-bold ${tx.type === 'Withdraw' ? 'text-amber-400' : 'text-emerald-400'}">৳${tx.amount}</div>
+                        <span class="text-[10px] text-gray-400">${tx.status}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderPackagesGrid() {
+            const container = document.getElementById('packages-grid-container');
+            container.innerHTML = appState.packages.map(pkg => `
+                <div class="glass-panel p-6 rounded-3xl space-y-4 relative overflow-hidden border border-gray-800 hover:border-cyan-500/40 transition">
+                    <div class="flex items-center justify-between">
+                        <span class="font-black text-cyan-400 text-lg">${pkg.name}</span>
+                        <span class="px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-300 font-bold text-[10px] border border-cyan-500/20">${pkg.validity}</span>
+                    </div>
+                    <div class="text-3xl font-black text-white">৳${pkg.price}</div>
+                    <div class="space-y-2 border-t border-b border-gray-800 py-3 text-xs">
+                        <div class="flex justify-between text-gray-400"><span>Daily Return:</span> <span class="text-emerald-400 font-bold">৳${pkg.daily} / Day</span></div>
+                        <div class="flex justify-between text-gray-400"><span>Total Return:</span> <span class="text-white font-bold">৳${pkg.daily * 60}</span></div>
+                    </div>
+                    <button onclick="activatePackage('${pkg.id}')" class="w-full py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs transition">
+                        Activate Plan
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function renderWalletTable() {
+            const tbody = document.getElementById('wallet-tx-tbody');
+            tbody.innerHTML = appState.txHistory.map(tx => `
+                <tr class="hover:bg-gray-900/40 transition">
+                    <td class="p-3 font-semibold text-white">${tx.type}</td>
+                    <td class="p-3 font-mono font-bold ${tx.type === 'Withdraw' ? 'text-amber-400' : 'text-emerald-400'}">৳${tx.amount}</td>
+                    <td class="p-3 font-mono text-gray-300 text-xs">${tx.details}</td>
+                    <td class="p-3 text-[10px] text-gray-500">${tx.time}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400">${tx.status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        // --- FEATURES & ACTIONS ---
+        function switchTab(tabId) {
+            ['dashboard', 'packages', 'wallet', 'referral'].forEach(t => {
+                document.getElementById(`sec-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).className = "px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition";
+            });
+
+            document.getElementById(`sec-${tabId}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabId}`).className = "px-3 py-1.5 rounded-lg text-xs font-bold text-cyan-400 bg-cyan-500/10 transition";
+        }
+
+        function claimDailyCheckin() {
+            const u = appState.currentUser;
+            if (u.checkedIn) {
+                showToast("You have already claimed today's bonus!", "info");
+                return;
+            }
+            u.balance += 20;
+            u.earnings += 20;
+            u.checkedIn = true;
+            saveSession();
+            renderUserData();
+            showToast("৳20 Daily bonus credited to balance!", "success");
+        }
+
+        function activatePackage(pkgId) {
+            const pkg = appState.packages.find(p => p.id === pkgId);
+            const u = appState.currentUser;
+
+            if (!pkg || !u) return;
+
+            if (u.balance < pkg.price) {
+                showToast(`Insufficient Balance! Please deposit ৳${pkg.price - u.balance} more.`, "error");
+                openDepositModal();
+                return;
+            }
+
+            u.balance -= pkg.price;
+            u.investment += pkg.price;
+            u.activePackages.push(pkg.name);
+
+            appState.txHistory.unshift({
+                id: "TX-" + Math.floor(100 + Math.random() * 900),
+                type: "Package Buy",
+                amount: pkg.price,
+                details: `Activated ${pkg.name}`,
+                time: new Date().toLocaleString(),
+                status: "Success"
+            });
+
+            saveSession();
+            renderUserData();
+            renderWalletTable();
+            showToast(`Successfully activated ${pkg.name}!`, "success");
+        }
+
+        // --- DEPOSIT & WITHDRAW MODALS ---
+        function openDepositModal() {
+            syncAdminGatewaySettings();
+            selectDepositMethod('bKash');
+            openModal('modal-deposit');
+        }
+
+        function selectDepositMethod(method) {
+            appState.activeMethod = method;
+            const btnBkash = document.getElementById('dep-btn-bkash');
+            const btnNagad = document.getElementById('dep-btn-nagad');
+            const numEl = document.getElementById('dep-gw-num');
+            const typeEl = document.getElementById('dep-gw-type');
+
+            if (method === 'bKash') {
+                btnBkash.className = "p-3 rounded-2xl bg-pink-500/20 border-2 border-pink-500 text-pink-300 font-extrabold text-xs flex items-center justify-center gap-2 transition";
+                btnNagad.className = "p-3 rounded-2xl bg-gray-900 border border-gray-700 text-gray-400 font-extrabold text-xs flex items-center justify-center gap-2 transition";
+                numEl.innerText = window.adminGateways.bkashNum;
+                typeEl.innerText = window.adminGateways.bkashType;
+                typeEl.className = "text-[10px] px-2 py-0.5 rounded bg-pink-500/20 text-pink-300 font-bold";
+            } else {
+                btnNagad.className = "p-3 rounded-2xl bg-orange-500/20 border-2 border-orange-500 text-orange-300 font-extrabold text-xs flex items-center justify-center gap-2 transition";
+                btnBkash.className = "p-3 rounded-2xl bg-gray-900 border border-gray-700 text-gray-400 font-extrabold text-xs flex items-center justify-center gap-2 transition";
+                numEl.innerText = window.adminGateways.nagadNum;
+                typeEl.innerText = window.adminGateways.nagadType;
+                typeEl.className = "text-[10px] px-2 py-0.5 rounded bg-orange-500/20 text-orange-300 font-bold";
+            }
+        }
+
+        function copyGatewayNumber() {
+            const num = document.getElementById('dep-gw-num').innerText;
+            navigator.clipboard.writeText(num);
+            showToast("Account number copied!", "info");
+        }
+
+        function handleDepositSubmit(e) {
+            e.preventDefault();
+            const amount = parseFloat(document.getElementById('dep-amount').value);
+            const sender = document.getElementById('dep-sender').value;
+            const trxid = document.getElementById('dep-trxid').value;
+
+            appState.txHistory.unshift({
+                id: "TX-" + Math.floor(100 + Math.random() * 900),
+                type: "Deposit",
+                amount: amount,
+                details: `${appState.activeMethod} TrxID: ${trxid} (${sender})`,
+                time: new Date().toLocaleString(),
+                status: "Pending"
+            });
+
+            closeModal('modal-deposit');
+            renderUserData();
+            renderWalletTable();
+            showToast("Deposit request submitted for admin review!", "success");
+        }
+
+        function openWithdrawModal() {
+            openModal('modal-withdraw');
+        }
+
+        function handleWithdrawSubmit(e) {
+            e.preventDefault();
+            const amount = parseFloat(document.getElementById('wd-amount').value);
+            const account = document.getElementById('wd-account').value;
+            const gateway = document.getElementById('wd-gateway').value;
+            const u = appState.currentUser;
+
+            if (u.balance < amount) {
+                showToast("Insufficient account balance for withdrawal!", "error");
+                return;
+            }
+
+            u.balance -= amount;
+            saveSession();
+
+            appState.txHistory.unshift({
+                id: "TX-" + Math.floor(100 + Math.random() * 900),
+                type: "Withdraw",
+                amount: amount,
+                details: `Payout to ${gateway}: ${account}`,
+                time: new Date().toLocaleString(),
+                status: "Pending"
+            });
+
+            closeModal('modal-withdraw');
+            renderUserData();
+            renderWalletTable();
+            showToast("Withdrawal payout request submitted!", "success");
+        }
+
+        function copyRefLink() {
+            const input = document.getElementById('ref-link-input');
+            navigator.clipboard.writeText(input.value);
+            showToast("Referral link copied to clipboard!", "info");
+        }
+
+        // --- UTILITY FUNCTIONS ---
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        function showToast(message, type = "info") {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const typeClasses = {
+                success: "border-emerald-500/50 bg-emerald-950/90 text-emerald-300",
+                error: "border-rose-500/50 bg-rose-950/90 text-rose-300",
+                info: "border-cyan-500/50 bg-cyan-950/90 text-cyan-300"
+            };
+
+            toast.className = `px-4 py-3 rounded-xl border backdrop-blur-md text-xs font-semibold shadow-xl flex items-center gap-2 transition-all duration-300 transform translate-x-5 opacity-0 ${typeClasses[type]}`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${message}`;
+
+            container.appendChild(toast);
+
+            setTimeout(() => { toast.classList.remove('translate-x-5', 'opacity-0'); }, 10);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-5');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
